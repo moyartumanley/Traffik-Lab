@@ -1,6 +1,8 @@
 ﻿# Traffik-Lab
  
-This project retrieves nearby public transportation stations using the SL (Stockholm Public Transport) API and an external GPS device connected to a Raspberry Pi. It determines the user’s location, finds the closest station, and continuously fetches real-time departure data for that station. Data is then displayed on an 8 x 8 LED display on the Raspberry Pi. This was done as a project for a Data-Driven Information Visualization course.
+This project retrieves nearby public transportation stations using the SL (Stockholm Public Transport) API and an external GPS device connected to a Raspberry Pi. It determines the user’s location, finds the closest station, and continuously fetches real-time departure data for that station. Data is then displayed on an 8 x 8 LED display on the Raspberry Pi. 
+
+This was done as a project for a Data-Driven Information Visualization course.
 
 ## Features:
 - GPS Integration: Connects to an external GPS device via SerialPort
@@ -21,5 +23,6 @@ This project retrieves nearby public transportation stations using the SL (Stock
    cd gps-station-finder
 
 2. **Install dependences**
-```bash
+   ```bash
    npm install serialport @serialport/parser-readline
+
