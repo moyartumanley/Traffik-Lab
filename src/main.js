@@ -21,6 +21,7 @@ async function fetchStations() {
  * @return {Object} Object containing latitude and longitude of user
  */
 async function getUserLocation() {
+  //TODO: Replace hard-coded location data with data from GPS.
   const lat = 59.3293;
   const lon = 18.0686;
   console.log("Mock location:", { lat, lon });
