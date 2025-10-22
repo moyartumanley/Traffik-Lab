@@ -8,6 +8,7 @@ const stationJSONURL =
 
 /**
  * Fetches all availiable stations from Traffik Lab station API
+ * @return {Object} Object containing data for all stations
  */
 async function fetchStations() {
   const response = await fetch(stationJSONURL);
