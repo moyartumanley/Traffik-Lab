@@ -5,6 +5,8 @@ import { ReadlineParser } from "@serialport/parser-readline";
 // Station API data
 const stationJSONURL =
   "https://transport.integration.sl.se/v1/sites?expand=true";
+const linesJSONURL = "https://transport.integration.sl.se/v1/lines?transport_authority_id=1";
+const dodgeCors = url => "https://corsproxy.io/?url=" + url;
 
 /**
  * Fetches all availiable stations from Traffik Lab station API
@@ -16,6 +18,19 @@ async function fetchStations() {
   const data = await response.json();
   console.log("Fetched stations:", data);
   return data;
+}
+
+async function fetchLines() {
+  const response = await fetch(dodgeCors(linesJSONURL));
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+
+  const filteredLines = [
+    ...(data.metro || []).map(l => ({ ...l, type: "METRO" })),
+    ...(data.bus || []).map(l => ({ ...l, type: "BUS" }))
+  ];
+  const allowedLineIds = new Set(filteredLines.map(l => l.id));
+  return { filteredLines, allowedLineIds };
 }
 
 /** Retrieves geographic data of user
@@ -72,9 +87,9 @@ function findClosestStation(allStationData, user) {
 
   // Assign user latitude and longitude to local vars
   console.log("User location:", user);
-  userLat = user.lat;
+  const userLat = user.lat;
   console.log("User latitude:", userLat);
-  userLon = user.lon;
+  const userLon = user.lon;
   console.log("User longitude:", userLon);
 
   const stations = allStationData.map((station) => ({
@@ -121,7 +136,7 @@ function fetchTransportData(stationDepartures) {
  * @param {int} siteId Specific site id for a given station.
  * @return {setInterval} Re-executes departure retrieval every 30s to get up-to-date data.
  */
-function observeDepartures(siteId) {
+function observeDepartures(siteId, allowedLineIds, filteredLines) {
   const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures`;
   async function fetchDepartures() {
     try {
@@ -134,9 +149,30 @@ function observeDepartures(siteId) {
         return;
       }
 
-      const departures = fetchTransportData(data);
-      renderDepartures(departures);
-    } catch (error) {
+      // Filter departures to include only metro or bus
+      const filteredDepartures = data.departures.filter(d =>
+        allowedLineIds.has(d.line.id)
+      );
+
+      // Determine station type from the first filtered departure
+      const stationType =
+        filteredDepartures.length > 0
+          ? filteredLines.find(l => l.id === filteredDepartures[0].line.id)?.type || "UNKNOWN"
+          : "UNKNOWN";
+
+      // Add the station type to each departure for rendering
+      const departuresWithType = filteredDepartures.map(d => ({
+        ...d,
+        station_transport_type: stationType
+      }));
+
+      console.log(`Closest station type: ${stationType}`);
+      console.log("Filtered departures:", departuresWithType);
+
+      // const departures = fetchTransportData(departuresWithType);
+      renderDepartures(departuresWithType);
+    } 
+    catch (error) {
       console.error("Error fetching departures:", error);
     }
   }
@@ -150,28 +186,35 @@ function observeDepartures(siteId) {
  * @param {Object} data An object containing data for forms of transport approaching and departing from a given station.
  */
 function renderDepartures(data) {
-  const output = document.getElementById("departures");
-  output.innerHTML = ""; // clear previous list
+  // const output = document.getElementById("departures");
+  // output.innerHTML = ""; // clear previous list
+  // data.forEach((departure) => {
+  //   const item = document.createElement("div");
+  //   item.textContent = ` Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`;
+  //   output.appendChild(item);
+  // });
+
+  console.clear();
   data.forEach((departure) => {
-    const item = document.createElement("div");
-    item.textContent = ` Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`;
-    output.appendChild(item);
+    console.log(`Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`);
   });
 }
 
 // Runs the code
 (async () => {
   try {
-    const [stations, user] = await Promise.all([
+    const [stations, user, lines] = await Promise.all([
       fetchStations(),
       getUserLocation(),
+      fetchLines()
     ]);
 
+    const { filteredLines, allowedLineIds } = lines;
     const closestStation = findClosestStation(stations, user);
     if (!closestStation) return;
 
     // Watch for departures
-    observeDepartures(closestStation.id);
+    observeDepartures(closestStation.id, allowedLineIds, filteredLines);
   } catch (error) {
     console.error("Error:", error);
   }
