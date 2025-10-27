@@ -1,6 +1,13 @@
 // needed to read data from external GPS device
-import { SerialPort } from "serialport";
-import { ReadlineParser } from "@serialport/parser-readline";
+// import { SerialPort } from "serialport";
+// import { ReadlineParser } from "@serialport/parser-readline";
+
+import {redMetro} from './animations.js';
+import {blueMetro} from './animations.js';
+import {greenMetro} from './animations.js';
+
+import {redBus} from './animations.js';
+import {blueBus} from './animations.js';
 
 // Station API data
 const stationJSONURL =
@@ -201,9 +208,9 @@ function renderDepartures(data, stationName, stationType) {
   }));
 
   console.clear();
-  console.log(JSON.stringify(departuresDict, null, 2));
-  
-  return departuresDict;
+  data.forEach((departure) => {
+    console.log(`Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`);
+  });
 }
 
 // Runs the code
@@ -220,7 +227,19 @@ function renderDepartures(data, stationName, stationType) {
     if (!closestStation) return;
 
     // Watch for departures
-    observeDepartures(closestStation.id, allowedLineIds, filteredLines, closestStation.name);
+    observeDepartures(closestStation.id, allowedLineIds, filteredLines);
+
+
+
+
+    // redMetro(); //runs redMetro animation
+    // blueMetro();
+    // greenMetro();
+    blueBus();
+
+
+
+
   } catch (error) {
     console.error("Error:", error);
   }
