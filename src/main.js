@@ -136,7 +136,7 @@ function fetchTransportData(stationDepartures) {
  * @param {int} siteId Specific site id for a given station.
  * @return {setInterval} Re-executes departure retrieval every 30s to get up-to-date data.
  */
-function observeDepartures(siteId, allowedLineIds, filteredLines) {
+function observeDepartures(siteId, allowedLineIds, filteredLines, stationName) {
   const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures`;
   async function fetchDepartures() {
     try {
@@ -170,7 +170,7 @@ function observeDepartures(siteId, allowedLineIds, filteredLines) {
       console.log("Filtered departures:", departuresWithType);
 
       // const departures = fetchTransportData(departuresWithType);
-      renderDepartures(departuresWithType);
+      renderDepartures(departuresWithType, stationName, stationType);
     } 
     catch (error) {
       console.error("Error fetching departures:", error);
@@ -185,19 +185,25 @@ function observeDepartures(siteId, allowedLineIds, filteredLines) {
  * Renders departure data onto index.html for debugging purposes.
  * @param {Object} data An object containing data for forms of transport approaching and departing from a given station.
  */
-function renderDepartures(data) {
-  // const output = document.getElementById("departures");
-  // output.innerHTML = ""; // clear previous list
-  // data.forEach((departure) => {
-  //   const item = document.createElement("div");
-  //   item.textContent = ` Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`;
-  //   output.appendChild(item);
-  // });
+function renderDepartures(data, stationName, stationType) {
+  const departuresDict = data.map((departure, index) => ({
+    station_name: stationName,
+    station_type: stationType,
+    departure_number: index + 1,
+    destination: departure.destination,
+    direction: departure.direction,
+    state: departure.state,
+    scheduled: departure.scheduled,
+    expected: departure.expected,
+    line_id: departure.line.id,
+    line_designation: departure.line.designation,
+    transport_mode: departure.line.transport_mode
+  }));
 
   console.clear();
-  data.forEach((departure) => {
-    console.log(`Line: ${departure.line.id} → ${departure.destination} | Expected Arrival: (${departure.expected}) | Time: ${departure.scheduled} | Transport Type: ${departure.line.transport_mode}`);
-  });
+  console.log(JSON.stringify(departuresDict, null, 2));
+  
+  return departuresDict;
 }
 
 // Runs the code
@@ -214,7 +220,7 @@ function renderDepartures(data) {
     if (!closestStation) return;
 
     // Watch for departures
-    observeDepartures(closestStation.id, allowedLineIds, filteredLines);
+    observeDepartures(closestStation.id, allowedLineIds, filteredLines, closestStation.name);
   } catch (error) {
     console.error("Error:", error);
   }
