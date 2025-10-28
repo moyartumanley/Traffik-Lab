@@ -1,12 +1,14 @@
 import { getLineColor } from "../utils/transitColors.js";
 import { parseTime } from "../utils/geo.js";
 import { triggerAnimation } from "../logic/animationTrigger.js";
+import { displayDepartureInfo } from "../transit-animations/textDisplay.js";
 
 export function fetchEarliestDepature(departures) {
   if (!departures || departures.length === 0) {
     return null;
   }
 
+  console.log(departures);
   return departures.reduce((earliest, current) => {
     return parseTime(current.scheduled) < parseTime(earliest.scheduled)
       ? current
@@ -69,7 +71,8 @@ export function observeDepartures(siteId, allowedLineIds, filteredLines, station
           `Earliest departure @ ${stationName}:`,
           earliest.line.designation,
           earliest.destination,
-          earliest.scheduled
+          earliest.scheduled,
+          earliest.expected
         );
 
         const lineColorHex = getLineColor(
@@ -81,7 +84,8 @@ export function observeDepartures(siteId, allowedLineIds, filteredLines, station
           `Detected color ${lineColorHex} for ${earliest.station_transport_type} line ${earliest.line.designation}`
         );
 
-        triggerAnimation(lineColorHex, earliest.station_transport_type);
+        await triggerAnimation(lineColorHex, earliest.station_transport_type);
+        await displayDepartureInfo(earliest, earliest.display, stationName, lineColorHex);
       }
 
       // console.log(`Closest station type: ${stationType}`);
@@ -95,5 +99,6 @@ export function observeDepartures(siteId, allowedLineIds, filteredLines, station
   }
 
   fetchDepartures(); // initial fetch
-  return setInterval(fetchDepartures, 30000);
+  return setInterval(fetchDepartures, 60000); //refresh every min so theres time for animations
 }
+

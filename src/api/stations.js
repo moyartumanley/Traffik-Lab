@@ -10,6 +10,6 @@ export async function fetchStations() {
   const response = await fetch(stationJSONURL);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = await response.json();
-  console.log("Fetched stations:", data);
+  // console.log("Fetched stations:", data);
   return data;
 }

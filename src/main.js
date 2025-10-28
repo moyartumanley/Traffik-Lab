@@ -23,7 +23,7 @@ async function getUserLocation() {
     const closestStation = findClosestStation(stations, user);
     if (!closestStation) return;
 
-    observeDepartures(closestStation.id, allowedLineIds, filteredLines);
+    observeDepartures(closestStation.id, allowedLineIds, filteredLines, closestStation.name);
   } catch (error) {
     console.error("Error:", error);
   }

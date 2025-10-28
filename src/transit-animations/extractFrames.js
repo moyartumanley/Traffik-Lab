@@ -19,7 +19,7 @@ export async function extractFrames(input, animationName, frameCount = 2) {
     const frame = [];
     for (let y = 0; y < FRAME_HEIGHT; y++) {
       for (let x = 0; x < FRAME_WIDTH; x++) {
-        const idx = ((y * png.width + x + f * FRAME_WIDTH) << 2);
+        const idx = (y * png.width + x + f * FRAME_WIDTH) << 2;
         const r = png.data[idx];
         const g = png.data[idx + 1];
         const b = png.data[idx + 2];
@@ -28,9 +28,15 @@ export async function extractFrames(input, animationName, frameCount = 2) {
     }
     frames.push(frame);
   }
-
-  const outputFile = `./transit-animations/${animationName}.json`;
-  fs.writeFileSync(outputFile, JSON.stringify(frames, null, 2));
-  console.log(`✅ Extracted ${frames.length} frames → ${outputFile}`);
   return frames;
+}
+
+/**
+ * Saves frames to a file
+ * @param {array} frames - Matrix of RGB values
+ */
+function saveFrames(frames) {
+  const outputFile = `./transit-animations/sprites/${animationName}.json`;
+  fs.writeFileSync(outputFile, JSON.stringify(frames, null, 2));
+  console.log(`Extracted ${frames.length} frames: ${outputFile}`);
 }
