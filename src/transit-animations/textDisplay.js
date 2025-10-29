@@ -41,6 +41,8 @@ export async function displayDepartureInfo(
   const destination = departure.destination;
   const stationName = name.toUpperCase();
 
+  // TODO: could maybe opt for displa similar to departure board in station [line number] [destination] [arrival]
+  // ex: 14    Morby Centrum    3min
   sense.clear(); // refresh screen before displaying new info
   await displayText(normalizeText(`${stationName}`), orange, 0.07);
   await sleep(400); //pause befroe next str
