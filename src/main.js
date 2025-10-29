@@ -2,13 +2,18 @@ import { fetchStations } from "./api/stations.js";
 import { fetchLines } from "./api/lines.js";
 import { observeDepartures } from "./api/departures.js";
 import { findClosestStation } from "./logic/findStation.js";
+import { getLocationFromIP, getLocationFromPort} from './utils/geo.js';
 
 async function getUserLocation() {
-  //TODO: Replace with actual GPS
-  const lat = 59.3293;
-  const lon = 18.0686;
-  console.log("Mock location:", { lat, lon });
-  return { lat, lon };
+  try {
+    const location = await getLocationFromPort();
+    return location;
+  } catch (gpsError) {
+    console.warn("GPS failed, falling back to IP-based location:", gpsError.message);
+     const location = await getLocationFromIP();
+    console.log("Detected location:", location);
+    return location;
+  }
 }
 
 (async () => {

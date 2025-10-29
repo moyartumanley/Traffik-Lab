@@ -8,7 +8,7 @@ export function fetchEarliestDepature(departures) {
     return null;
   }
 
-  console.log(departures);
+  // console.log(departures);
   return departures.reduce((earliest, current) => {
     return parseTime(current.scheduled) < parseTime(earliest.scheduled)
       ? current

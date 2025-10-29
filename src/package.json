@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "gps": "^0.8.1",
     "jimp": "^1.6.0",
     "pngjs": "^7.0.0",
     "sense-hat-led": "^1.2.0",
