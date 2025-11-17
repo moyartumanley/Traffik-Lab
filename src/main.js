@@ -7,6 +7,8 @@ import { uiState } from "./ui/uiState.js";
 import { startMatrixLoop } from "./ui/renderMatrix.js";
 import "./ui/joystickController.js";
 
+// TODO: improve gps implementation, implement ui matrix
+
 async function getUserLocation() {
   try {
     const location = await getLocationFromPort();
@@ -21,24 +23,6 @@ async function getUserLocation() {
     return location;
   }
 }
-
-// (async () => {
-//   try {
-//     const [stations, user, lines] = await Promise.all([
-//       fetchStations(),
-//       getUserLocation(),
-//       fetchLines(),
-//     ]);
-
-//     const { filteredLines, allowedLineIds } = lines;
-//     const closestStation = findClosestStation(stations, user);
-//     if (!closestStation) return;
-
-//     observeDepartures(closestStation.id, allowedLineIds, filteredLines, closestStation.name);
-//   } catch (error) {
-//     console.error("Error:", error);
-//   }
-// })();
 
 (async () => {
   const [stations, user, lines] = await Promise.all([
