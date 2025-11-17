@@ -3,7 +3,7 @@ import { PNG } from "pngjs";
 
 /**
  * Extracts frames from a Pixilart PNG sprite and saves as JSON
- * @param {string} input - Path to the PNG file (relative to project)
+ * @param {string} input - Path to the PNG file
  * @param {string} animationName - Output JSON filename (without extension)
  * @param {number} frameCount - Number of frames horizontally in the PNG
  */
@@ -33,7 +33,7 @@ export async function extractFrames(input, animationName, frameCount = 2) {
 
 /**
  * Saves frames to a file
- * @param {array} frames - Matrix of RGB values
+ * @param {array} frames Matrix of RGB values
  */
 function saveFrames(frames) {
   const outputFile = `./transit-animations/sprites/${animationName}.json`;

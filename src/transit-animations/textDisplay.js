@@ -1,4 +1,7 @@
 import { createRequire } from "module";
+import { isLockedStatus, lock, unlock } from "../ui/animationLock.js";
+import {hexToRgb} from "../utils/hexToRGB.js";
+
 const require = createRequire(import.meta.url);
 const sense = require("sense-hat-led");
 
@@ -9,10 +12,6 @@ const sense = require("sense-hat-led");
  * @param {number} speed - Scroll speed (default 0.05).
  */
 export async function displayText(message, color = "#FFFFFF", speed = 0.05) {
-  const hexToRgb = (hex) => {
-    const bigint = parseInt(hex.replace("#", ""), 16);
-    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
-  };
   const rgb = hexToRgb(color);
   return new Promise((resolve) => {
     sense.showMessage(message, speed, rgb, () => {
@@ -24,50 +23,52 @@ export async function displayText(message, color = "#FFFFFF", speed = 0.05) {
 
 /**
  * Displays detailed departure info (station, destination, line, time).
- * @param {object} departure - The earliest departure object.
- * @param {string} stationName - Name of the station.
- * @param {string} lineColorHex - Color of the line (e.g., "#005AA7").
+ * @param {object} departure  The earliest departure object
+ * @param {string} name  Name of station
+ * @param {string} lineColorHex  HEX of line.
  */
 export async function displayDepartureInfo(
   departure,
   timeUntilArrival,
-  name,
-  lineColorHex
+  stationName,
+  lineColorHex = "#FFFFFF"
 ) {
-  const orange = "#FFA500"; // similar to departure board text color
+  if (!isLockedStatus()){
+    lock(); // skip if matrix is busy
+  }
 
-  //   const minutesUntilArrival = calcMinutesUntil(departure.scheduled);
-  const lineDesignation = departure.line.designation;
-  const destination = departure.destination;
-  const stationName = name.toUpperCase();
+  try {
+    const orange = "#FFA500"; // default text color
 
-  // TODO: could maybe opt for displa similar to departure board in station [line number] [destination] [arrival]
-  // ex: 14    Morby Centrum    3min
-  sense.clear(); // refresh screen before displaying new info
-  await displayText(normalizeText(`${stationName}`), orange, 0.07);
-  await sleep(400); //pause befroe next str
-  await displayText(normalizeText(`to ${destination}`), lineColorHex, 0.07);
-  await sleep(400);
-  await displayText(
-    normalizeText(`Line ${lineDesignation}`),
-    lineColorHex,
-    0.07
-  );
-  await sleep(400);
-  if (timeUntilArrival === "Nu") {
-    await displayText(
-      normalizeText(`Arrives ${timeUntilArrival}`),
-      orange,
-      0.07
-    );
-  } else {
-    await displayText(
-      normalizeText(`Arrives in ${timeUntilArrival}`),
-      orange,
-      0.07
-    );
+    const safeStation = (stationName || "Unknown Station").toUpperCase();
+    const safeDestination = departure?.destination || "Unknown Destination";
+    const safeLine = departure?.line?.designation || "?";
+
+    sense.clear();
+
+    // Scroll station name
+    await displayText(normalizeText(`${safeStation}`), orange, 0.07);
+    await sleep(400);
+
+    // Scroll destination
+    await displayText(normalizeText(`to ${safeDestination}`), lineColorHex, 0.07);
+    await sleep(400);
+
+    // Scroll line
+    await displayText(normalizeText(`Line ${safeLine}`), lineColorHex, 0.07);
+    await sleep(400);
+
+    // Scroll arrival time
+    const timeText =
+      timeUntilArrival === "Nu"
+        ? `Arrives ${timeUntilArrival}`
+        : `Arrives in ${timeUntilArrival || "?"}`;
+    await displayText(normalizeText(timeText), orange, 0.07);
+  } finally {
+    unlock(); // release lock
   }
 }
+
 
 /**
  * Some characters can't be read by the screen.
