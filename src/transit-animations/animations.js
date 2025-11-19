@@ -1,11 +1,11 @@
 import { extractFrames } from './extractFrames.js';
 import { createRequire } from "module";
+import { sleep } from "../utils/sleep.js";
+
 const require = createRequire(import.meta.url);
 const sense = require('sense-hat-led');
 const busFrames = 28;
 const metroFrames = 33;
-
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 export async function redMetro() {
   const spritePath = "/home/pi/Traffik-Lab/images/metro/red-line-metro/pixilart-sprite.png";

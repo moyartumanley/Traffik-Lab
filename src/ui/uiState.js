@@ -2,7 +2,8 @@
 export const uiState = {
   stopIndex: 0,
   departureIndex: 0,
-  nearestStations: [],
-  departures: [],
-  animationLock: false
+  nearestStations: [], 
+  departuresByStopId: new Map(), 
+  currentStopName: null, 
+  animationLock: false,
 };

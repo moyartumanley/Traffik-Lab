@@ -6,163 +6,154 @@ import { hexToRgb } from "../utils/hexToRGB.js";
 const require = createRequire(import.meta.url);
 const sense = require("sense-hat-led");
 
-const BLACK = [0, 0, 0];
+// background color: (slightly off-black)
+const BLACK = [19, 17, 17];
+const TRANSPARENT = [0, 0, 0]; // true black is needed for layer merging
 const HIGHLIGHT_MULTIPLIER = 1.5;
 
-// ---------------------------
-// Helper Functions
-// ---------------------------
+/** Helper functions */
 
 function emptyMatrix() {
+  // Returns matrix consisting of only background color
   return new Array(64).fill(BLACK);
 }
 
 function dim([r, g, b]) {
+  // Dimming factor for visibility purposes
+  const DIM_FACTOR = 0.5;
   return [
-    Math.round(r * 0.2),
-    Math.round(g * 0.2),
-    Math.round(b * 0.2),
+    Math.round(r * DIM_FACTOR),
+    Math.round(g * DIM_FACTOR),
+    Math.round(b * DIM_FACTOR),
   ];
 }
 
 function isBlack([r, g, b]) {
+  // Checks if color is transparent
   return r === 0 && g === 0 && b === 0;
 }
 
 function highlight(color) {
+  // Highlights color if selected
   return color.map(v => Math.min(255, Math.round(v * HIGHLIGHT_MULTIPLIER)));
 }
 
+/**
+ * Merges layers by skipping transparent pixels, ensuring the background
+ * is only applied where no other layer has a pixel.
+ */
 function mergeLayers(...layers) {
-  const out = emptyMatrix();
+  // Start with an empty matrix
+  const matrix = emptyMatrix(); 
 
   layers.forEach(layer => {
     for (let i = 0; i < 64; i++) {
-      // Only overwrite if the pixel is not BLACK
       const px = layer[i];
-      if (!isBlack(px)) {
-        out[i] = px;
+      if (!isBlack(px)) { // bg color pixel is overwritten iff. it is not transparent
+        matrix[i] = px;
       }
     }
   });
 
-  return out;
+  return matrix;
 }
 
-// ---------------------------
-// Layer 1: Static Background UI
-// (Colored blocks shown in your diagram)
-// ---------------------------
-
 function drawBackgroundLayer() {
+  // Fills pixels with background color
   const m = emptyMatrix();
+  return m;
+}
 
-  // You can update this to reflect your actual static design.
-  // Below are placeholder positional examples based on your sketch:
+/** STOP SELECTION ROW (bottom) */
 
-  // Green blocks (top-left and top-right)
-  const green = [0, 120, 0];
-  const greenPositions = [0, 1, 8, 9, 6, 7, 14, 15];
-  greenPositions.forEach(i => (m[i] = green));
+function drawStopSelectorRow(stops, stopIndex) {
+  // Initialize matrix with transparent pixels
+  const m = new Array(64).fill(TRANSPARENT); 
+  const row = 7; // bottom row
 
-  // Red chain in the middle
-  const red = [150, 0, 0];
-  const redPositions = [16 + 2, 24 + 2, 32 + 2, 40 + 3]; // roughly matching your drawing
-  redPositions.forEach(i => (m[i] = red));
+  stops.slice(0, 8).forEach((stop, col) => {
+    // for each stop, check if it has a color defined
+    let color = stop.color
+      ? hexToRgb(stop.color) // if so, convert HEX to rgb
+      : [60, 60, 60]; // otherwise, make it grey
 
-  // Blue block bottom-left-ish
-  const blue = [0, 0, 150];
-  m[40 + 1] = blue;
+    // if the column selected is the stop index, highlight the LED representing the stop
+    if (col === stopIndex) {
+      color = highlight(color);
+    } else { // otherwise, dim it
+      color = dim(color);
+    }
+
+    m[row * 8 + col] = color; // find the pixel idx and make it that color
+  });
 
   return m;
 }
 
-// ---------------------------
-// Layer 2: Departure Grid (Top 7 rows)
-// ---------------------------
+/** DEPARTURE GRID (top 7 rows) */
+function drawDepartureGrid(stops, stopIndex, departureIndex, departuresByStopId) {
+  // Initialize matrix with transparent pixels
+  const m = new Array(64).fill(TRANSPARENT); 
+  const EMPTY_SLOT_COLOR = [80, 80, 80]; 
 
-function drawDepartureGrid(departures, stopIndex, departureIndex) {
-  const m = emptyMatrix();
+  // Iterate through  8 closest stops
+  stops.slice(0, 8).forEach((stop, col) => {
+    const departures = departuresByStopId.get(stop.id) || []; // get the departures for the current stop ID from map
 
-  // Split into 8 columns × 7 rows as per the diagram
-  const cols = Array(8)
-    .fill(0)
-    .map((_, c) => departures.slice(c * 7, c * 7 + 7));
-
-  for (let col = 0; col < 8; col++) {
+    // Iterate through 7 earliest departures for stop
     for (let row = 0; row < 7; row++) {
-      const dep = cols[col][row];
+      const dep = departures[row];
 
+      // Use the line's color if available, otherwise use a brighter empty color
       let color = dep && dep.lineColor
         ? hexToRgb(dep.lineColor)
-        : [40, 40, 40];
-
+        : EMPTY_SLOT_COLOR;
+      
+      // Highlight selected departure
       if (col === stopIndex && row === departureIndex) {
         color = highlight(color);
       } else {
         color = dim(color);
       }
 
-      const index = row * 8 + col;
+      const index = row * 8 + col; // find pixel idx
       m[index] = color;
     }
-  }
-
-  return m;
-}
-
-// ---------------------------
-// Layer 3: Stop Selector Row (Bottom row)
-// ---------------------------
-
-function drawStopSelectorRow(stops, stopIndex) {
-  const m = emptyMatrix();
-  const row = 7; // bottom row
-
-  stops.slice(0, 8).forEach((stop, col) => {
-    let color = stop.color
-      ? hexToRgb(stop.color)
-      : [60, 60, 60];
-
-    if (col === stopIndex) {
-      color = highlight(color);
-    } else {
-      color = dim(color);
-    }
-
-    m[row * 8 + col] = color;
   });
 
   return m;
 }
 
-// ---------------------------
-// Main Renderer
-// ---------------------------
-
+/** RENDER MATRIX */
 export function drawMatrix() {
+  //if theres an animation lock, don't update matrix
   if (isLockedStatus()) return;
 
-  const bgLayer = drawBackgroundLayer();
-  const stopsLayer = drawStopSelectorRow(
-    uiState.nearestStations || [],
-    uiState.stopIndex
-  );
+  // otherwise get state properties
+  const stops = uiState.nearestStations || [];
+  const { stopIndex, departureIndex, departuresByStopId } = uiState; 
+
+  // draw departure grid (top 7 rows)
   const depsLayer = drawDepartureGrid(
-    uiState.departures || [],
-    uiState.stopIndex,
-    uiState.departureIndex
+    stops,
+    stopIndex,
+    departureIndex,
+    departuresByStopId
   );
+  
+  // draw stop selector (bottom row)
+  const stopsLayer = drawStopSelectorRow(stops, stopIndex);
+  
+  // merge the layers (background should be initialized in mergeLayers)
+  // merge order: departures then stops 
+  const finalPixels = mergeLayers(depsLayer, stopsLayer);
 
-  const finalPixels = mergeLayers(bgLayer, depsLayer, stopsLayer);
-
+  // update pixels in senseHat
   sense.setPixels(finalPixels);
 }
 
-// ---------------------------
-// Update Loop
-// ---------------------------
-
+// start matrix refresh loop
 export function startMatrixLoop() {
-  setInterval(drawMatrix, 200); // ~5 FPS
+  // every 1s refresh matrix state
+  setInterval(drawMatrix, 1000); 
 }

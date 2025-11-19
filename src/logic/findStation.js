@@ -1,17 +1,15 @@
 import { haversineDistance } from "../utils/geo.js";
-import { uiState } from "../ui/uiState.js";
 
 /**
- * Finds the seven closest stations from all available stations using user location data
- * and stores them in uiState.nearestStations.
+ * Finds the closest stations from all available stations using user location data
  * @param {Array} allStationData JSON array retrieved from Traffik Lab station API
- * @param {Object} user Object containing user geographic data such as latitude and longitude
+ * @param {Object} user Object containing user geographic data (latitude and longitude)
+ * @returns {Array} The sorted and filtered list of the 8 closest stations.
  */
 export function findClosestStations(allStationData, user) {
   if (!Array.isArray(allStationData)) {
     console.error("Station data is not an array", allStationData);
-    uiState.nearestStations = [];
-    return;
+    return []; 
   }
 
   const userLat = user.lat;
@@ -20,22 +18,15 @@ export function findClosestStations(allStationData, user) {
   const stationsWithDistance = allStationData.map((station) => ({
     ...station,
     distanceKm: haversineDistance(userLat, userLon, station.lat, station.lon),
-  }));
+  })); // For all stations, add entry for distance in km from user location
 
   const closestStations = stationsWithDistance
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, 7)
+    .sort((a, b) => a.distanceKm - b.distanceKm) // Sort stations by distance from user location
+    .slice(0, 8) // Get 8 closest stations
     .map((s) => ({
       ...s,
-      color: [255, 255, 255], // default pixel color for stops
+      color: [255, 255, 255], // Add a default pixel color for stops
     }));
 
-  uiState.nearestStations = closestStations;
-
-  // Ensure the stop selector stays in bounds
-  if (uiState.stopIndex >= uiState.nearestStations.length) {
-    uiState.stopIndex = uiState.nearestStations.length - 1;
-  }
-
-  console.log("Updated nearest stations in uiState:", uiState.nearestStations);
+  return closestStations; // Array is returned to main.js for setting uiState.nearestStations, easier to see where vals r being set.
 }

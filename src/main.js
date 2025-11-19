@@ -25,6 +25,7 @@ async function getUserLocation() {
 }
 
 (async () => {
+  // Fetches initial api data (stations, lines) and user location asynchronously 
   const [stations, user, lines] = await Promise.all([
     fetchStations(),
     getUserLocation(),
@@ -33,20 +34,27 @@ async function getUserLocation() {
 
   const { filteredLines, allowedLineIds } = lines;
 
-  // populate uiState.nearestStations
-  findClosestStations(stations, user);
+  // Determines the 8 nearest stations and populates uiState.nearestStations (shared state that informs how the ui will look) 
+  uiState.nearestStations = findClosestStations(stations, user);
 
-  // observe departures for the currently selected station
-  const firstStation = uiState.nearestStations[0];
-  if (firstStation) {
-    observeDepartures(
-      firstStation.id,
-      allowedLineIds,
-      filteredLines,
-      firstStation.name
+  // Retrieves 8 closest stations for the bottom row display 
+  const stopsToObserve = uiState.nearestStations.slice(0, 8);
+
+  // Fetches departures for all 8 stations, initial fetch important for populating UI 
+  const fetchAllDepartures = async () => {
+    await Promise.all(
+      stopsToObserve.map((stop) =>
+        observeDepartures(stop.id, allowedLineIds, filteredLines, stop.name)
+      )
     );
-  }
+  };
 
-  // start matrix refresh loop
+  // Perform initial departure fetch and await ensures data is in uiState before rendering senseHat 
+  await fetchAllDepartures();
+
+ // Recurring departure fetch, checks for new departures every 30s 
+  setInterval(fetchAllDepartures, 30000); 
+
+  // Refreshes senseHat matrix iff. first departure data is availiable 
   startMatrixLoop();
 })();

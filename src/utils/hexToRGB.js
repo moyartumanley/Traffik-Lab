@@ -1,17 +1,17 @@
 /**
  * Converts a hex color string to an RGB array [r, g, b].
- * Always returns integers between 0–255.
+ * Rreturns integers between 0–255.
  *
- * @param {string} hex - Hex color string, with or without "#".
+ * @param {string} hex Hex color string, with or without #.
  * @returns {[number, number, number]} RGB array.
  */
 export function hexToRgb(hex) {
   if (!hex || typeof hex !== "string") return [255, 255, 255]; // fallback white
 
-  // Remove "#" if present
+  // Remove # if present
   let clean = hex.replace("#", "").trim();
 
-  // Handle shorthand hex like #FA3 → #FFAA33
+  // Handles shorthand hex 
   if (clean.length === 3) {
     clean = clean
       .split("")
