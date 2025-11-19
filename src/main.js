@@ -1,14 +1,27 @@
 import { fetchLines } from "./api/lines.js";
 import { fetchStations } from "./api/stations.js";
-import { getLocationFromIP, getLocationFromPort } from "./utils/geo.js";
+import {
+  getLocationFromIP,
+  getLocationFromPort,
+  haversineDistance,
+} from "./utils/geo.js";
 import { findClosestStations } from "./utils/findStation.js";
 import { observeDepartures } from "./api/departures.js";
 import { uiState } from "./ui/uiState.js";
 import { startMatrixLoop } from "./ui/renderMatrix.js";
 import "./ui/joystickController.js";
 
-// TODO: improve gps implementation, implement ui matrix
+/** Global states */
+let allStationsCache = null;
+let linesCache = null;
+let lastKnownLocation = null;
+let departureUpdateIntervalId = null; // ID for the 30s departure fetch
 
+/** Thresholds */
+const LOCATION_CHANGE_KM = 0.5; // only update location if changed by 1/2 km
+const LOCATION_CHECK_INTERVAL_MS = 300000; // check location every 5 minutes
+
+/** Retrieves user location either from GPS connected to port, or from IP address, */
 async function getUserLocation() {
   try {
     const location = await getLocationFromPort();
@@ -24,23 +37,39 @@ async function getUserLocation() {
   }
 }
 
-(async () => {
-  // Fetches initial api data (stations, lines) and user location asynchronously 
-  const [stations, user, lines] = await Promise.all([
-    fetchStations(),
-    getUserLocation(),
-    fetchLines(),
-  ]);
+/**
+ * Find nearest stations and start/restart departure observation.
+ * Runs on initial setup and whenever the location changes significantly.
+ * @param {Object} location The current user location {lat, lon}.
+ */
+async function updateStationsAndDepartures(location) {
+  console.log("Starting station and departure update for new location.");
+  const { filteredLines, allowedLineIds } = linesCache;
 
-  const { filteredLines, allowedLineIds } = lines;
+  // Determine the 8 nearest stations
+  uiState.nearestStations = findClosestStations(allStationsCache, location);
 
-  // Determines the 8 nearest stations and populates uiState.nearestStations (shared state that informs how the ui will look) 
-  uiState.nearestStations = findClosestStations(stations, user);
+  // Reset selection index at the new closest station
+  uiState.stopIndex = 0;
+  uiState.departureIndex = 0;
 
-  // Retrieves 8 closest stations for the bottom row display 
+  // for debugging: log closest station and distance
+  console.log(
+    "Closest station:",
+    uiState.nearestStations[0].name,
+    "at",
+    uiState.nearestStations[0].distanceKm.toFixed(3),
+    "km"
+  );
+
+  // Clear any existing 30s departure update loop to prevent duplicates
+  if (departureUpdateIntervalId) {
+    clearInterval(departureUpdateIntervalId);
+    departureUpdateIntervalId = null;
+  }
+
+  // Departure fetch logic for the 8 closest stops
   const stopsToObserve = uiState.nearestStations.slice(0, 8);
-
-  // Fetches departures for all 8 stations, initial fetch important for populating UI 
   const fetchAllDepartures = async () => {
     await Promise.all(
       stopsToObserve.map((stop) =>
@@ -49,12 +78,72 @@ async function getUserLocation() {
     );
   };
 
-  // Perform initial departure fetch and await ensures data is in uiState before rendering senseHat 
+  // Initial departure fetch
   await fetchAllDepartures();
 
- // Recurring departure fetch, checks for new departures every 30s 
-  setInterval(fetchAllDepartures, 30000); 
+  // Start recurring 30s departure fetch
+  departureUpdateIntervalId = setInterval(fetchAllDepartures, 30000);
+}
 
-  // Refreshes senseHat matrix iff. first departure data is availiable 
-  startMatrixLoop();
+/**
+ * Checks the device's location and calls updateStationsAndDepartures
+ * if the change exceeds the defined thresholds.
+ */
+async function checkLocationPeriodically() {
+  const currentLocation = await getUserLocation();
+
+  if (lastKnownLocation === null) {
+    // initial run: always update stations/departures
+    lastKnownLocation = currentLocation;
+    await updateStationsAndDepartures(currentLocation);
+    return;
+  }
+
+  // Calculate distance between last known location and current location
+  const distance = haversineDistance(
+    lastKnownLocation.lat,
+    lastKnownLocation.lon,
+    currentLocation.lat,
+    currentLocation.lon
+  );
+
+  console.log(
+    `Location check: Moved ${distance.toFixed(3)} km from last update.`
+  );
+
+  // log for debugging
+  if (distance >= LOCATION_CHANGE_KM) {
+    console.log(
+      `significant location change detected. ${distance.toFixed(2)} km.`
+    );
+
+    // Update state and rerun the main update logic
+    lastKnownLocation = currentLocation;
+    await updateStationsAndDepartures(currentLocation);
+  }
+}
+
+(async () => {
+  try {
+    // Fetch initial data (stations, lines) and cache them
+    const [stations, lines] = await Promise.all([
+      fetchStations(),
+      fetchLines(),
+    ]);
+
+    allStationsCache = stations;
+    linesCache = lines;
+
+    // Perform starting location check and set up initial set of stations/departures
+    await checkLocationPeriodically();
+
+    // Start the periodic location check interval (runs every 5 min)
+    setInterval(checkLocationPeriodically, LOCATION_CHECK_INTERVAL_MS);
+
+    // Start the Sense HAT matrix refresh loop
+    startMatrixLoop();
+  } catch (err) {
+    console.error("Critical failure during startup:", err.message);
+    process.exit(1);
+  }
 })();

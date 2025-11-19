@@ -1,0 +1,41 @@
+{
+  "name": "sl-departures-display",
+  "version": "1.0.0",
+  "description": "A Raspberry Pi application that displays real-time public transport departures (SL/Stockholm) on an 8x8 LED matrix. It uses a GPS or IP lookup to determine location, finds the nearest stations, and fetches live data.",
+  "main": "main.js",
+  "type": "module", 
+  "dependencies": {
+    "ms": "^2.1.3",
+    "debug": "^4.4.0",
+    "node-addon-api": "^8.3.0",
+    "node-gyp-build": "^4.8.4",
+    "serialport": "^13.0.0",
+    "gps": "^0.5.2",
+    "pngjs": "^7.0.0",
+    "glob": "^10.4.5"
+  },
+  "devDependencies": {
+    "sense-hat-led": "^1.1.0"
+  },
+  "scripts": {
+    "start": "node ./src/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moyartumanley/Traffik-Lab.git"
+  },
+  "keywords": [
+    "raspberry-pi",
+    "sense-hat",
+    "sl-api",
+    "geolocation",
+    "transit"
+  ],
+  "author": "moyartumanley",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/moyartumanley/Traffik-Lab/issues"
+  },
+  "homepage": "https://github.com/moyartumanley/Traffik-Lab#readme"
+}

@@ -46,27 +46,37 @@ export async function getLocationFromPort() {
     const parser = port.pipe(new ReadlineParser({ delimiter: "\r\n" }));
     const gps = new GPS();
 
+    // Times out after 5s if no fix is acquired from GPS
+    const timeout = setTimeout(() => {
+      port.close();
+      reject(new Error("GPS timeout: no fix acquired"));
+    }, 5000);
+
+    // Handles errors when opening the serial port
+    port.on("error", (err) => {
+      clearTimeout(timeout); // prevents timeout from firing later
+      port.close();
+      reject(new Error(`SerialPort error: ${err.message}`));
+    });
+
+    // Handles GPS data
     gps.on("data", (data) => {
       if (data.type === "GGA" && data.lat && data.lon) {
+        clearTimeout(timeout); // GPS fix acquired, cancel the timeout
         console.log("GPS location:", { lat: data.lat, lon: data.lon });
         resolve({ lat: data.lat, lon: data.lon });
         port.close(); // stop reading after first fix
       }
     });
 
+    // Feed serial data to the GPS parser
     parser.on("data", (line) => {
       try {
         gps.update(line);
       } catch (err) {
-        console.error("GPS parse error:", err);
+        console.error("GPS parse error:", err.message);
       }
     });
-
-    // timeout iff GPS never gets a fix
-    setTimeout(() => {
-      reject(new Error("GPS timeout: no fix acquired"));
-      port.close();
-    }, 5000); // 5s
   });
 }
 
