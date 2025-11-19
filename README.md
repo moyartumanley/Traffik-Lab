@@ -1,3 +1,4 @@
+![](https://github.com/SL-Departure-Display/header.gif)
 # SL Departure Display for Sense HAT:
 
 This project turns a Raspberry Pi with an 8x8 senseHat screen into a real-time public transport departure board for the Stockholm Public Transport (SL) system. It uses an external GPS or IP location to find the nearest stations and displays live departure times on 8x8 LED matrix.
@@ -121,4 +122,5 @@ The joystick lets you select a specific stop and departure.
 ### Notes:
 * **When you change stops (left/right):** The departure selection automatically jumps back to the **first (earliest) departure** for that new stop.
 * **During Animation:** When you press enter, the screen will flash a quick animation (like a moving train). During this animation and the scrolling text, the monitor is busy and will ignore all joystick movements. Wait for the screen to return to the grid before moving the joystick again.
+
 
