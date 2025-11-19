@@ -7,7 +7,7 @@ This project turns a Raspberry Pi with an 8x8 senseHat screen into a real-time p
 
 * **Real-time Data:** Fetches live departure information from the SL API.
 * **Automatic Location:** Uses connected GPS sensor (`/dev/ttyACM0`) as the primary source, falling back to **IP geolocation** for city-level location when GPS fails.
-* **Location Update:** Periodically checks if the device has moved more than 0.5 km and automatically updates the list of nearest stations.
+* **Location Update:** Checks every 5 min if the device has moved more than 0.5 km and automatically updates the list of nearest stations.
 * **Persistent Operation:** Uses **systemd service** to ensure autostart on boot and auto-restart on crash.
 * **Interaction:** Stop navigation and departure selection via the SenseHAT Joystick.
 * **Animated Feedback:** Plays a line-specific transit animation followed by a scrolling text display for the selected departure.
@@ -122,6 +122,7 @@ The joystick lets you select a specific stop and departure.
 ### Notes:
 * **When you change stops (left/right):** The departure selection automatically jumps back to the **first (earliest) departure** for that new stop.
 * **During Animation:** When you press enter, the screen will flash a quick animation (like a moving train). During this animation and the scrolling text, the monitor is busy and will ignore all joystick movements. Wait for the screen to return to the grid before moving the joystick again.
+
 
 
 
