@@ -119,5 +119,6 @@ The joystick lets you select a specific stop and departure.
 | **Enter (Press Joystick)** | **Show Details:** Shows more information about selected departure | Use this to see the full information (**Destination**, **Line Number**, and **estimated time left**) scroll across the screen. |
 
 ### Notes:
-* **When you change stops (LEFT/RIGHT):** The departure selection automatically jumps back to the **first (earliest) departure** for that new stop.
+* **When you change stops (left/right):** The departure selection automatically jumps back to the **first (earliest) departure** for that new stop.
 * **During Animation:** When you press enter, the screen will flash a quick animation (like a moving train). During this animation and the scrolling text, the monitor is busy and will ignore all joystick movements. Wait for the screen to return to the grid before moving the joystick again.
+
