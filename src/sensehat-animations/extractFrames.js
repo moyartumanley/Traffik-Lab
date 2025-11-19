@@ -36,7 +36,7 @@ export async function extractFrames(input, animationName, frameCount = 2) {
  * @param {array} frames Matrix of RGB values
  */
 function saveFrames(frames) {
-  const outputFile = `./transit-animations/sprites/${animationName}.json`;
+  const outputFile = `./sensehat-animations/sprites/${animationName}.json`;
   fs.writeFileSync(outputFile, JSON.stringify(frames, null, 2));
   console.log(`Extracted ${frames.length} frames: ${outputFile}`);
 }

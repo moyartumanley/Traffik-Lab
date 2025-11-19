@@ -4,7 +4,7 @@ import { drawMatrix } from "./renderMatrix.js";
 import {
   displayDepartureInfo,
   displayText,
-} from "../transit-animations/textDisplay.js";
+} from "../sensehat-animations/textDisplay.js";
 import { getLineColor } from "../utils/transitColors.js";
 import { lock, unlock } from "./animationLock.js";
 import {
@@ -14,7 +14,7 @@ import {
   redBus,
   blueBus,
   yellowBus
-} from "../transit-animations/animations.js";
+} from "../sensehat-animations/animations.js";
 
 const joystick = new Joystick();
 
