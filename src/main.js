@@ -1,7 +1,7 @@
 import { fetchLines } from "./api/lines.js";
 import { fetchStations } from "./api/stations.js";
 import { getLocationFromIP, getLocationFromPort } from "./utils/geo.js";
-import { findClosestStations } from "./logic/findStation.js";
+import { findClosestStations } from "./utils/findStation.js";
 import { observeDepartures } from "./api/departures.js";
 import { uiState } from "./ui/uiState.js";
 import { startMatrixLoop } from "./ui/renderMatrix.js";
