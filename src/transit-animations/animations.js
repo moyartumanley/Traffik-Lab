@@ -1,11 +1,11 @@
 import { extractFrames } from './extractFrames.js';
 import { createRequire } from "module";
+import { sleep } from "../utils/sleep.js";
+
 const require = createRequire(import.meta.url);
 const sense = require('sense-hat-led');
 const busFrames = 28;
 const metroFrames = 33;
-
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 export async function redMetro() {
   const spritePath = "/home/pi/Traffik-Lab/images/metro/red-line-metro/pixilart-sprite.png";
@@ -38,6 +38,13 @@ export async function redBus() {
 export async function blueBus() {
   const spritePath = "/home/pi/Traffik-Lab/images/bus/blue-line-bus/pixilart-sprite.png";
   const frames = await extractFrames(spritePath, "blue_bus_animation", busFrames);
+  await animate(frames);
+  await sleep(200);
+}
+
+export async function yellowBus() {
+  const spritePath = "/home/pi/Traffik-Lab/images/bus/yellow-line-bus/pixilart-sprite.png";
+  const frames = await extractFrames(spritePath, "yellow_bus_animation", busFrames);
   await animate(frames);
   await sleep(200);
 }
