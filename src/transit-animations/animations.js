@@ -42,6 +42,13 @@ export async function blueBus() {
   await sleep(200);
 }
 
+export async function yellowBus() {
+  const spritePath = "/home/pi/Traffik-Lab/images/bus/yellow-line-bus/pixilart-sprite.png";
+  const frames = await extractFrames(spritePath, "yellow_bus_animation", busFrames);
+  await animate(frames);
+  await sleep(200);
+}
+
 
 async function animate(frames) {
   const LOOP_COUNT = 1;

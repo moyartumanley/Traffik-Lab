@@ -1,4 +1,4 @@
-import { redMetro, blueMetro, greenMetro, redBus, blueBus } from "../transit-animations/animations.js";
+import { redMetro, blueMetro, greenMetro, redBus, blueBus, yellowBus } from "../transit-animations/animations.js";
 import { isLockedStatus, unlock } from "../ui/animationLock.js";
 
 let animationLock = false;
@@ -28,6 +28,7 @@ export async function triggerAnimation(lineColorHex, transportType) {
     if (transportType === "BUS") {
       if (normalizedColor === "#DA291C") await redBus();
       else if (normalizedColor === "#005AA7") await blueBus();
+      else if (normalizedColor === "#FFA500") await yellowBus();
       else console.log(`No animation defined for BUS ${normalizedColor}`);
     }
   } finally {

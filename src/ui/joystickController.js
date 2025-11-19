@@ -13,6 +13,7 @@ import {
   greenMetro,
   redBus,
   blueBus,
+  yellowBus
 } from "../transit-animations/animations.js";
 
 const joystick = new Joystick();
@@ -27,6 +28,7 @@ export const ANIMATIONS = {
   bus: {
     "#DA291C": redBus,
     "#005AA7": blueBus,
+    "#FFA500": yellowBus
   },
 };
 
