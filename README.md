@@ -98,6 +98,11 @@ Initiate the service daemon
 sudo systemctl start sl-display.service
 ```
 
+For real-time logs (helpful for debugging)
+```bash
+sudo journalctl -u sl-display.service -f
+```
+
 ## How To Use:
 ### Explanation of Screen Visuals:
 * **Stop Selection (Bottom Row):** Each light represents one of the 8 nearest stations. Stations are ordered left to right in order of distance from the user's location.
@@ -122,6 +127,7 @@ The joystick lets you select a specific stop and departure.
 ### Notes:
 * **When you change stops (left/right):** The departure selection automatically jumps back to the **first (earliest) departure** for that new stop.
 * **During Animation:** When you press enter, the screen will flash a quick animation (like a moving train). During this animation and the scrolling text, the monitor is busy and will ignore all joystick movements. Wait for the screen to return to the grid before moving the joystick again.
+
 
 
 
