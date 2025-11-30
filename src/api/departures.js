@@ -69,6 +69,7 @@ export async function observeDepartures(
 
     // Set highlighted stop name to be the stop name of station
     uiState.currentStopName = stopName;
+    // console.log(currentDepartures[0]);
     return currentDepartures;
 
   } catch (error) {

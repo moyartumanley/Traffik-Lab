@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/moyartumanley/Traffik-Lab.git"
+    "url": "git+https://github.com/moyartumanley/SL-Departure-Display.git"
   },
   "keywords": [
     "raspberry-pi",
@@ -35,7 +35,7 @@
   "author": "moyartumanley",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/moyartumanley/Traffik-Lab/issues"
+    "url": "https://github.com/moyartumanley/SL-Departure-Display/issues"
   },
-  "homepage": "https://github.com/moyartumanley/Traffik-Lab#readme"
+  "homepage": "https://github.com/moyartumanley/SL-Departure-Display#readme"
 }

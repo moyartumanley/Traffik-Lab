@@ -7,18 +7,33 @@ import {
 } from "../sensehat-animations/textDisplay.js";
 import { getLineColor } from "../utils/transitColors.js";
 import { lock, unlock } from "./animationLock.js";
+import { sleep } from "../utils/sleep.js";
 import {
   redMetro,
   blueMetro,
   greenMetro,
   redBus,
   blueBus,
-  yellowBus
+  yellowBus,
+  northbound,
+  southbound,
 } from "../sensehat-animations/animations.js";
+
+import {
+  animationCancel,
+  setCancellation,
+  resetCancellation,
+} from "./animationCancel.js";
+
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const sense = require("sense-hat-led");
 
 const joystick = new Joystick();
 
-// Animations for specific lines and forms of transit
+// idx 7 = station rows, meaning we are no longer highlighting departures
+const STATION_MODE_INDEX = 7;
+
 export const ANIMATIONS = {
   metro: {
     "#DA291C": redMetro,
@@ -28,125 +43,180 @@ export const ANIMATIONS = {
   bus: {
     "#DA291C": redBus,
     "#005AA7": blueBus,
-    "#FFA500": yellowBus
+    "#FFA500": yellowBus,
+  },
+  direction: {
+    1: northbound,
+    2: southbound,
   },
 };
 
 /** HELPER FUNCTIONS */
 
-// Retrieves departures for the currently selected stop
+/** Sets cancellation flag for animation lock */
+function cancelAnimation() {
+  console.log("Animation interrupted, cancelling.");
+  setCancellation();
+}
+/** Cancels animation and redraws matrix */
+async function cancelAndRedraw() {
+  cancelAnimation();
+
+  // release animation lock and add a timer buffer to hopefully prevent flickering.
+  while (uiState.animationLock) {
+    await sleep(50);
+  }
+  await sleep(50);
+
+  sense.clear();
+  drawMatrix();
+}
+
+/** Retrieves departures from a selected stop */
 function getSelectedStopDepartures() {
   const selectedStop = uiState.nearestStations[uiState.stopIndex];
   if (!selectedStop) return [];
-  return uiState.departuresByStopId.get(selectedStop.id) || []; // retrieves departures from map by using the station's stop ID
+  return uiState.departuresByStopId.get(selectedStop.id) || [];
 }
 
-/**
- * Plays a short animation for a given departure. Animation is dependent on departure mode and line color.
- * @param {Object} departure Object containing departure data
- */
+/** Plays animation associated with departure */
 export async function playAnimation(departure) {
-  // retrieve form of transit and line color from departure
+  const direction_code = departure.direction_code;
   const mode = departure.station_transport_type.toLowerCase();
   const lineColorHex = getLineColor(
     departure.line.designation,
     departure.line.transport_mode
   );
 
-  // use departure mode of transit and line color to obtain animation
+  const direction_animation = ANIMATIONS.direction[direction_code];
   const animation = ANIMATIONS[mode]?.[lineColorHex];
 
-  // if there isnt an animation for the specific mode of transit or line color, warn in console
-  if (!animation) {
-    console.warn(
-      "No animation defined for",
-      mode,
-      departure.line.designation,
-      lineColorHex
-    );
-    return;
+  // animation for departure direction (northbound/southbound)
+  if (direction_animation) {
+    await direction_animation();
+    if (animationCancel.isCancelled) return;
   }
 
-  // wait for animation to finish
+  // if there is no transit animation mapped then return, otherwise play
+  if (!animation) return;
   await animation();
 }
 
 /** JOYSTICK NAVIGATION HANDLING */
+joystick.on("up", async () => {
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
+  const currentDepartures = getSelectedStopDepartures();
 
-// NAVIGATES DEPARTURES (up/down):
-joystick.on("up", () => {
-  if (uiState.animationLock) return; // prevent navigation during animation
-  uiState.departureIndex = Math.max(0, uiState.departureIndex - 1); // changes departure index, goes to earlier departure
-  drawMatrix(); // refresh senseHat matrix to reflect change
+  // if in station selector, jump back to the last departure on up
+  if (uiState.departureIndex === STATION_MODE_INDEX) {
+    // select last departure, or 0 if list is empty
+    uiState.departureIndex = Math.max(0, currentDepartures.length - 1);
+  } else {
+    // normal navigation up
+    uiState.departureIndex = Math.max(0, uiState.departureIndex - 1);
+  }
+  
+  drawMatrix();
 });
 
-joystick.on("down", () => {
-  if (uiState.animationLock) return; // prevent navigation during animation
-  const currentDepartures = getSelectedStopDepartures(); // gets current stop's departures
-  // limit the index to the number of available departures (max 7), goes to later departures
-  uiState.departureIndex = Math.min(
-    currentDepartures.length - 1, // highest valid index
-    uiState.departureIndex + 1 // intended new index
-  );
-  drawMatrix(); // refresh senseHat matrix to reflect change
+joystick.on("down", async () => {
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
+  const currentDepartures = getSelectedStopDepartures();
+  
+  // if in station selector, stay there
+  if (uiState.departureIndex === STATION_MODE_INDEX) return;
+
+  // if at last departure or list is empty, go to station selector
+  if (uiState.departureIndex >= currentDepartures.length - 1) {
+    uiState.departureIndex = STATION_MODE_INDEX;
+  } else {
+    // normal navigation down
+    uiState.departureIndex++;
+  }
+
+  drawMatrix();
 });
 
-// NAVIGATES STATIONS (left/right):
-joystick.on("left", () => {
-  if (uiState.animationLock) return; // prevent navigation during animation
+joystick.on("left", async () => {
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   uiState.stopIndex =
-    (uiState.stopIndex -
-      1 + // intended new idx
-      uiState.nearestStations.length) % // + number of stops
-    uiState.nearestStations.length; // ensures final idx is always in range of 0 to n-1 and wraps selection to right
-  uiState.departureIndex = 0; // resets departure selection when changing stop
-  drawMatrix(); // refresh senseHat matrix to reflect change
+    (uiState.stopIndex - 1 + uiState.nearestStations.length) %
+    uiState.nearestStations.length;
+  
+  // reset to top of departure list when changing stations
+  uiState.departureIndex = 0;
+  drawMatrix();
 });
 
-joystick.on("right", () => {
-  if (uiState.animationLock) return; // prevent navigation during animation
-  uiState.stopIndex = (uiState.stopIndex + 1) % uiState.nearestStations.length; // ensures in range of 0 to n-1
-  uiState.departureIndex = 0; // Reset departure selection when changing stop
-  drawMatrix(); // refresh senseHat matrix to reflect change
+joystick.on("right", async () => {
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
+  uiState.stopIndex = (uiState.stopIndex + 1) % uiState.nearestStations.length;
+  
+  // reset to top of departure list when changing stations
+  uiState.departureIndex = 0;
+  drawMatrix();
 });
 
-/** ENTER HANDLING (animation) */
+/** ENTER HANDLING */
 
 joystick.on("enter", async () => {
-  if (uiState.animationLock) return;
-
-  // lock animation system to stop the matrix refresh loop, prevents pixel overlap
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
+  resetCancellation();
   lock();
 
   try {
     const selectedStop = uiState.nearestStations[uiState.stopIndex];
     const departures = getSelectedStopDepartures();
-    const dep = departures[uiState.departureIndex];
 
-    if (dep) {
-      // vehicle animation runs while animation lock is active
-      await playAnimation(dep);
-
-      // text scrolling runs while animation lock is active
-      await displayDepartureInfo(
-        dep,
-        dep.display,
-        selectedStop.name,
-        dep.lineColor
-      );
-    } else if (selectedStop) {
-      // if stop is selected but no departure is found, display stop name
-      await displayText(selectedStop.name, "#FFA500");
+    // check if in station selector or valid departure
+    if (uiState.departureIndex === STATION_MODE_INDEX) {
+      // if station selector, just show the station name
+      if (selectedStop) {
+        await displayText(selectedStop.name, "#FFA500");
+      }
+    } else {
+      // otherwise, show animation and info
+      const dep = departures[uiState.departureIndex];
+      // if departureIndex is 0 but list is empty, treat as station selector
+      if (dep) {
+        await playAnimation(dep);
+        if (!animationCancel.isCancelled) {
+          await displayDepartureInfo(
+            dep,
+            dep.display,
+            selectedStop.name,
+            dep.lineColor
+          );
+        }
+      } else if (selectedStop) {
+        await displayText(selectedStop.name, "#FFA500");
+      }
     }
 
-    // redraw UI matrix to ensure navigation grid is back on screen
-    drawMatrix();
+    if (!animationCancel.isCancelled) {
+        drawMatrix();
+    }
   } catch (error) {
     console.error("Error during enter sequence:", error);
     await displayText("ERROR", "#FF0000");
   } finally {
-    // unlock animation lock regardless of animation success/failure
-    // allows matrix refesh loop to resume
-    unlock();
+    if (uiState.animationLock) {
+      unlock();
+    }
   }
 });
