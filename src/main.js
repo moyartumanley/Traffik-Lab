@@ -11,6 +11,7 @@ import { uiState } from "./ui/uiState.js";
 import { startMatrixLoop } from "./ui/renderMatrix.js";
 import "./ui/joystickController.js";
 import { sleep } from "./utils/sleep.js";
+import { displayText } from "./sensehat-animations/textDisplay.js";
 
 /** Global states */
 let allStationsCache = null;
@@ -126,6 +127,8 @@ async function checkLocationPeriodically() {
 
 (async () => {
   try {
+    // display initial connecting msg
+    displayText("Connecting...","#FFFFFF",0.065);
     // Fetch initial data (stations, lines) and cache them
     const [stations, lines] = await Promise.all([
       fetchStations(),
