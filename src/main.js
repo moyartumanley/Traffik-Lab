@@ -10,16 +10,17 @@ import { observeDepartures } from "./api/departures.js";
 import { uiState } from "./ui/uiState.js";
 import { startMatrixLoop } from "./ui/renderMatrix.js";
 import "./ui/joystickController.js";
+import { sleep } from "./utils/sleep.js";
 
 /** Global states */
 let allStationsCache = null;
 let linesCache = null;
 let lastKnownLocation = null;
-let departureUpdateIntervalId = null; // ID for the 30s departure fetch
+let departureUpdateIntervalId = null; // ID for the 10s departure fetch
 
 /** Thresholds */
 const LOCATION_CHANGE_KM = 0.5; // only update location if changed by 1/2 km
-const LOCATION_CHECK_INTERVAL_MS = 300000; // check location every 5 minutes
+const LOCATION_CHECK_INTERVAL_MS = 30000; // check location every 30s
 
 /** Retrieves user location either from GPS connected to port, or from IP address, */
 async function getUserLocation() {
@@ -62,7 +63,7 @@ async function updateStationsAndDepartures(location) {
     "km"
   );
 
-  // Clear any existing 30s departure update loop to prevent duplicates
+  // Clear any existing 10s departure update loop to prevent duplicates
   if (departureUpdateIntervalId) {
     clearInterval(departureUpdateIntervalId);
     departureUpdateIntervalId = null;
@@ -81,8 +82,8 @@ async function updateStationsAndDepartures(location) {
   // Initial departure fetch
   await fetchAllDepartures();
 
-  // Start recurring 30s departure fetch
-  departureUpdateIntervalId = setInterval(fetchAllDepartures, 30000);
+  // Start recurring 10s departure fetch
+  departureUpdateIntervalId = setInterval(fetchAllDepartures, 10000);
 }
 
 /**
