@@ -68,6 +68,7 @@ export async function displayDepartureInfo(
   isAnimating = true;
 
   try {
+    const speed = 0.05;
     const orange = "#FFA500";
     // protect against possible null vals
     const safeStation = (stationName || "Unknown Station").toUpperCase();
@@ -89,7 +90,7 @@ export async function displayDepartureInfo(
     // 1. Station info
     if (
       !(await runMessage(() =>
-        displayText(normalizeText(safeStation), orange, 0.07)
+        displayText(normalizeText(safeStation), orange, speed)
       ))
     )
       return;
@@ -103,7 +104,7 @@ export async function displayDepartureInfo(
     // 2. Destination info
     if (
       !(await runMessage(() =>
-        displayText(normalizeText(`to ${safeDestination}`), lineColorHex, 0.07)
+        displayText(normalizeText(`to ${safeDestination}`), lineColorHex, speed)
       ))
     )
       return;
@@ -114,7 +115,7 @@ export async function displayDepartureInfo(
     // 3. Line info
     if (
       !(await runMessage(() =>
-        displayText(normalizeText(`Line ${safeLine}`), lineColorHex, 0.07)
+        displayText(normalizeText(`Line ${safeLine}`), lineColorHex, speed)
       ))
     )
       return;
@@ -128,7 +129,7 @@ export async function displayDepartureInfo(
       timeUntilArrival === "Nu"
         ? `Arrives ${timeUntilArrival}`
         : `Arrives in ${timeUntilArrival || "?"}`;
-    await runMessage(() => displayText(normalizeText(timeText), orange, 0.07));
+    await runMessage(() => displayText(normalizeText(timeText), orange, speed));
   } catch (err) {
     console.error("Text display error", err);
   } finally {

@@ -76,7 +76,7 @@ async function animate(frames) {
       }
       
       sense.setPixels(frame);
-      await sleep(25); 
+      await sleep(45); 
     }
   }
 }

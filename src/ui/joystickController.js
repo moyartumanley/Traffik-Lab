@@ -72,14 +72,6 @@ async function cancelAndRedraw() {
   drawMatrix();
 }
 
-/** Cancel on joystick touch, meant to be used in joystick feedback conditionals*/
-function cancelOnTouch(){
-    if (uiState.animationLock) {
-    await cancelAndRedraw();
-    return;
-  }
-}
-
 /** Retrieves departures from a selected stop */
 function getSelectedStopDepartures() {
   const selectedStop = uiState.nearestStations[uiState.stopIndex];
@@ -112,7 +104,10 @@ export async function playAnimation(departure) {
 
 /** JOYSTICK NAVIGATION HANDLING */
 joystick.on("up", async () => {
-  cancelOnTouch();
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   const currentDepartures = getSelectedStopDepartures();
 
   // if in station selector, jump back to the last departure on up
@@ -128,7 +123,10 @@ joystick.on("up", async () => {
 });
 
 joystick.on("down", async () => {
-  cancelOnTouch();
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   const currentDepartures = getSelectedStopDepartures();
   
   // if in station selector, stay there
@@ -146,7 +144,10 @@ joystick.on("down", async () => {
 });
 
 joystick.on("left", async () => {
-  cancelOnTouch();
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   uiState.stopIndex =
     (uiState.stopIndex - 1 + uiState.nearestStations.length) %
     uiState.nearestStations.length;
@@ -157,7 +158,10 @@ joystick.on("left", async () => {
 });
 
 joystick.on("right", async () => {
-  cancelOnTouch();
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   uiState.stopIndex = (uiState.stopIndex + 1) % uiState.nearestStations.length;
   
   // reset to top of departure list when changing stations
@@ -168,7 +172,10 @@ joystick.on("right", async () => {
 /** ENTER HANDLING */
 
 joystick.on("enter", async () => {
-  cancelOnTouch();
+  if (uiState.animationLock) {
+    await cancelAndRedraw();
+    return;
+  }
   resetCancellation();
   lock();
 
