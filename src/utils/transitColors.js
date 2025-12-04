@@ -22,11 +22,11 @@ export function getLineColor(designation, transportType) {
         designation.startsWith("4");  
 
     if (isRedBus)
-      return "#DA291C"; // most likely an SL red bus
+      return "#da425e"; // most likely an SL red bus
 
     // blue inner-city buses (ex. 5xx, 6xx)
     if (designation.startsWith("5") || designation.startsWith("6"))
-      return "#005AA7"; // most likely an SL blue bus
+      return "#55bee1"; // most likely an SL blue bus
 
     // regional buses (ex. 7xx, 8xx)
     // lines 76, 75, 8xx are regional/express and have their own visual color
@@ -35,5 +35,5 @@ export function getLineColor(designation, transportType) {
   }
 
   // fallback for other unhandled bus lines 
-  return "#FF00FF"; 
+  return "#430076ff"; 
 }
