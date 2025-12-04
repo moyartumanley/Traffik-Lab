@@ -35,5 +35,5 @@ export function getLineColor(designation, transportType) {
   }
 
   // fallback for other unhandled bus lines 
-  return "#430076ff"; 
+  return "#430076"; 
 }
