@@ -5,10 +5,15 @@ import { hexToRgb } from "../utils/hexToRGB.js";
 const require = createRequire(import.meta.url);
 const sense = require("sense-hat-led");
 
+// blink every 300ms
+let blink = true;
+setInterval(() => {
+  blink = !blink;
+}, 300);
+
 // Global vars
 const BLACK = [19, 17, 17];
 const TRANSPARENT = [0, 0, 0];
-const HIGHLIGHT_MULTIPLIER = 1.5;
 
 /** Returns an empty 8x8 matrix */
 function emptyMatrix() {
@@ -17,11 +22,12 @@ function emptyMatrix() {
 
 /** Dims color */
 function dim([r, g, b]) {
-  const DIM_FACTOR = 0.5;
+  const gamma = 2.2; // typical LED gamma
+  const DIM_FACTOR = 0.05; // max factor
   return [
-    Math.round(r * DIM_FACTOR),
-    Math.round(g * DIM_FACTOR),
-    Math.round(b * DIM_FACTOR),
+    Math.round(255 * Math.pow((r / 255) * DIM_FACTOR, 1 / gamma)),
+    Math.round(255 * Math.pow((g / 255) * DIM_FACTOR, 1 / gamma)),
+    Math.round(255 * Math.pow((b / 255) * DIM_FACTOR, 1 / gamma)),
   ];
 }
 
@@ -32,6 +38,7 @@ function isBlack([r, g, b]) {
 
 /** Highlights color */
 function highlight(color) {
+  const HIGHLIGHT_MULTIPLIER = 1.5;
   return color.map((v) => Math.min(255, Math.round(v * HIGHLIGHT_MULTIPLIER)));
 }
 
@@ -48,10 +55,6 @@ function mergeLayers(...layers) {
     }
   });
   return matrix;
-}
-
-function drawBackgroundLayer() {
-  return emptyMatrix();
 }
 
 /** Adds white row for station selector */
@@ -79,19 +82,20 @@ function drawDepartureGrid(
   departuresByStopId
 ) {
   const m = new Array(64).fill(TRANSPARENT);
-  const EMPTY_SLOT_COLOR = [80, 80, 80];
   stops.slice(0, 8).forEach((stop, col) => {
     const departures = departuresByStopId.get(stop.id) || [];
     for (let row = 0; row < 7; row++) {
       const dep = departures[row];
+      let color = TRANSPARENT; // default off
+      if (dep && dep.lineColor) {
+        // color is determined by line color
+        const baseColor = hexToRgb(dep.lineColor);
 
-      // color is determined by line color
-      let color =
-        dep && dep.lineColor ? hexToRgb(dep.lineColor) : EMPTY_SLOT_COLOR;
-      if (col === stopIndex && row === departureIndex) {
-        color = highlight(color); // if selected, make brighter
-      } else {
-        color = dim(color);
+        if (col === stopIndex && row === departureIndex) {
+          color = blink ? baseColor : dim(baseColor);  // departure blinks between normal led color and dim
+        } else {
+          color = baseColor;
+        }
       }
       const index = row * 8 + col;
       m[index] = color;

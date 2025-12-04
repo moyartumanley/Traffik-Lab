@@ -39,10 +39,50 @@ export function haversineDistance(lat1, lon1, lat2, lon2) {
   return d;
 }
 
-/** Gets location from USB GPS */
+/**
+ * Auto-detect GPS serial ports.
+ */
+async function detectGPSPort() {
+  const ports = await SerialPort.list();
+
+  const gpsPatterns = [
+    /ttyACM\d+/,
+    /ttyUSB\d+/,
+    /ttyAMA\d+/,
+    /serial/i,
+    /usbserial/i,
+    /cu\.usb/i,
+  ];
+
+  for (const port of ports) {
+    if (gpsPatterns.some((p) => p.test(port.path))) {
+      console.log("Possible GPS device detected:", port.path);
+      return port.path;
+    }
+  }
+
+  console.warn("No GPS-like serial port found");
+  return null;
+}
+
+/**
+ * Reads location from an attached USB GPS receiver.
+ */
 export async function getLocationFromPort() {
+  const portPath = await detectGPSPort();
+  if (!portPath) throw new Error("No GPS serial port detected");
+
   return new Promise((resolve, reject) => {
-    const port = new SerialPort({ path: "/dev/ttyACM0", baudRate: 9600 });
+    // open port to check for fix
+    let port;
+    try {
+      port = new SerialPort({ path: portPath, baudRate: 9600 });
+    } catch (err) {
+      return reject(
+        new Error(`Failed to open GPS port ${portPath}: ${err.message}`)
+      );
+    }
+
     const parser = port.pipe(new ReadlineParser({ delimiter: "\r\n" }));
     const gps = new GPS();
 
@@ -64,8 +104,8 @@ export async function getLocationFromPort() {
       if (data.type === "GGA" && data.lat && data.lon) {
         clearTimeout(timeout); // GPS fix acquired, cancel the timeout
         console.log("GPS location:", { lat: data.lat, lon: data.lon });
-        resolve({ lat: data.lat, lon: data.lon });
         port.close(); // stop reading after first fix
+        resolve({ lat: data.lat, lon: data.lon });
       }
     });
 
@@ -89,12 +129,12 @@ export async function getLocationFromIP() {
 
     const lat = parseFloat(data.latitude);
     const lon = parseFloat(data.longitude);
-
+    
     console.log("IP-based location:", { lat, lon });
     return { lat, lon };
   } catch (error) {
     console.error("Failed to get location via IP:", error);
     // fallback to a default location if this doesnt work.
-    return { lat: 59.3293, lon: 18.0686 }; // basic Stockholm coords
+    return { lat: 59.343697, lon: 18.081395 }; // DIS coords
   }
 }
