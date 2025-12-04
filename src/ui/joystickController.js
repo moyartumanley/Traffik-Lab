@@ -41,8 +41,8 @@ export const ANIMATIONS = {
     "#007F3E": greenMetro,
   },
   bus: {
-    "#DA291C": redBus,
-    "#005AA7": blueBus,
+    "#da425e": redBus,
+    "#55bee1": blueBus,
     "#FFA500": yellowBus,
   },
   direction: {
